@@ -1,6 +1,6 @@
 import express from "express";
 import {
-  getCourses,
+  getAllCourses,
   getCourseById,
   createCourse,
   updateCourse,
@@ -9,7 +9,7 @@ import {
 
 const router = express.Router();
 
-router.get("/", getCourses);
+router.get("/", getAllCourses);
 
 router.get("/:id", getCourseById);
 

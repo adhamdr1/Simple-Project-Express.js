@@ -1,61 +1,80 @@
 import { courseSchema } from "../validation.js";
-import { courses } from "../data.js";
+// import { courses } from "../data.js";
+import Course from "../models/course.model.js";
 
-export const getCourses = (req, res) => {
-  res.json(courses);
-};
+export const getAllCourses = async (req, res) => {
+  try {
+    const courses = await Course.find();
 
-export const getCourseById = (req, res) => {
-  const courseId = +req.params.id;
-  console.log(req.params);
-  const course = courses.find((c) => c.id === courseId);
-  if (course) {
-    res.json(course);
-  } else {
-    res.status(404).json({ message: "Course not found" });
+    if (courses.length === 0) {
+      return res.status(404).json({ message: "No courses found" });
+    }
+
+    return res.json(courses);
+  } catch (error) {
+    return res.status(500).json({ message: "Error fetching courses" });
   }
 };
 
-export const createCourse = (req, res) => {
-  console.log(req.body);
-  const validatedCourse = courseSchema.parse(req.body);
-
-  if (!validatedCourse) {
-    return res.status(400).json({ message: "Invalid course data" });
+export const getCourseById = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (course) {
+      return res.json(course);
+    } else {
+      return res.status(404).json({ message: "Course not found" });
+    }
+  } catch (error) {
+    return res.status(400).json({ message: "Invalid course ID" });
   }
-
-  courses.push({ id: courses.length + 1, ...validatedCourse });
-
-  res.status(201).json(courses);
 };
 
-export const updateCourse = (req, res) => {
-  const validatedCourse = courseSchema.parse(req.params);
+export const createCourse = async (req, res) => {
+  try {
+    console.log(req.body);
+    const validatedCourse = courseSchema.parse(req.body);
 
-  if (!validatedCourse) {
-    return res.status(400).json({ message: "Invalid course data" });
+    if (!validatedCourse) {
+      return res.status(400).json({ message: "Invalid course data" });
+    }
+
+    const newCourse = new Course(req.body);
+    await newCourse.save();
+    return res.status(201).json(newCourse);
+  } catch (error) {
+    return res.status(500).json({ message: "Error creating course" });
   }
-
-  const courseId = +req.params.id;
-  let course = courses.find((c) => c.id === courseId);
-
-  if (!course) {
-    return res.status(404).json({ message: "Course not found" });
-  }
-
-  course = { ...course, ...req.body };
-
-  res.json(course);
 };
 
-export const deleteCourse = (req, res) => {
-  const courseId = +req.params.id;
-  const course = courses.find((c) => c.id === courseId);
+export const updateCourse = async (req, res) => {
+  try {
+    const course = await Course.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: { ...req.body },
+      },
+      { new: true },
+    );
 
-  if (!course) {
-    return res.status(404).json({ message: "Course not found" });
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+    return res.status(200).json(course);
+  } catch (error) {
+    return res.status(500).json({ message: "Error updating course" });
   }
+};
 
-  courses.splice(courses.indexOf(course), 1);
-  res.json({ message: "Course deleted" });
+export const deleteCourse = async (req, res) => {
+  try {
+    const course = await Course.findByIdAndDelete(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" });
+    }
+
+    return res.status(200).json({ message: "Course deleted" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error deleting course" });
+  }
 };
