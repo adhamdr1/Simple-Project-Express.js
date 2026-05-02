@@ -1,80 +1,80 @@
-import { courseSchema } from "../validation.js";
-// import { courses } from "../data.js";
+import { courseSchema } from "../schema/course.schema.js";
 import Course from "../models/course.model.js";
+import httpStatusText from "../utils/httpStatusText.js";
+import AppError from "../utils/AppError.js";
 
 export const getAllCourses = async (req, res) => {
-  try {
-    const courses = await Course.find();
+  const { limit = 10, page = 1 } = req.query;
+  console.log(req.query);
+  const skip = (page - 1) * limit;
 
-    if (courses.length === 0) {
-      return res.status(404).json({ message: "No courses found" });
-    }
+  const courses = await Course.find({}, { __v: 0 })
+    .skip(skip)
+    .limit(parseInt(limit));
 
-    return res.json(courses);
-  } catch (error) {
-    return res.status(500).json({ message: "Error fetching courses" });
-  }
+  return res.json({ status: httpStatusText.SUCCESS, data: courses });
 };
 
 export const getCourseById = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.id);
-    if (course) {
-      return res.json(course);
-    } else {
-      return res.status(404).json({ message: "Course not found" });
-    }
-  } catch (error) {
-    return res.status(400).json({ message: "Invalid course ID" });
+  const course = await Course.findById(req.params.id);
+  if (!course) {
+    throw new AppError("Course not found", 404, httpStatusText.FAIL);
   }
+  return res.json({ status: httpStatusText.SUCCESS, data: { course } });
 };
 
 export const createCourse = async (req, res) => {
-  try {
-    console.log(req.body);
-    const validatedCourse = courseSchema.parse(req.body);
+  const validationResult = courseSchema.safeParse(req.body);
 
-    if (!validatedCourse) {
-      return res.status(400).json({ message: "Invalid course data" });
-    }
-
-    const newCourse = new Course(req.body);
-    await newCourse.save();
-    return res.status(201).json(newCourse);
-  } catch (error) {
-    return res.status(500).json({ message: "Error creating course" });
+  if (!validationResult.success) {
+    const errorMessages = validationResult.error.issues
+      .map((issue) => issue.message)
+      .join(" - ");
+    throw new AppError(errorMessages, 400, httpStatusText.FAIL);
   }
+
+  const newCourse = new Course(validationResult.data);
+  await newCourse.save();
+  return res
+    .status(201)
+    .json({ status: httpStatusText.CREATED, data: newCourse });
 };
 
 export const updateCourse = async (req, res) => {
-  try {
-    const course = await Course.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: { ...req.body },
-      },
-      { new: true },
-    );
+  // 1. إنشاء Schema مخصصة للتعديل (كل الحقول اختيارية)
+  const updateSchema = courseSchema.partial();
+  const validationResult = updateSchema.safeParse(req.body);
 
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-    return res.status(200).json(course);
-  } catch (error) {
-    return res.status(500).json({ message: "Error updating course" });
+  if (!validationResult.success) {
+    const errorMessages = validationResult.error.issues
+      .map((issue) => issue.message)
+      .join(" - ");
+    throw new AppError(errorMessages, 400, httpStatusText.FAIL);
   }
+
+  const course = await Course.findByIdAndUpdate(
+    req.params.id,
+    {
+      $set: { ...validationResult.data },
+    },
+    { returnDocument: "after" }, // عشان يرجعلك الكورس بعد التعديل
+  );
+
+  if (!course) {
+    throw new AppError("Course not found", 404, httpStatusText.FAIL);
+  }
+  return res
+    .status(200)
+    .json({ status: httpStatusText.SUCCESS, data: { course } });
 };
 
-export const deleteCourse = async (req, res) => {
-  try {
-    const course = await Course.findByIdAndDelete(req.params.id);
+export const deleteCourse = async (req, res, next) => {
+  const course = await Course.findByIdAndDelete(req.params.id);
 
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" });
-    }
-
-    return res.status(200).json({ message: "Course deleted" });
-  } catch (error) {
-    return res.status(500).json({ message: "Error deleting course" });
+  if (!course) {
+    throw new AppError("Course not found", 404, httpStatusText.FAIL);
   }
+
+  // في الـ Delete الـ Data دايماً بتكون null
+  return res.status(200).json({ status: httpStatusText.SUCCESS, data: null });
 };
