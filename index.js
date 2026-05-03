@@ -4,7 +4,8 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 
 import httpStatusText from "./utils/httpStatusText.js";
-import coursesRouter from "./routes/courses.route.js";
+import coursesRouter from "./routes/course.route.js";
+import userRouter from "./routes/user.route.js";
 
 dotenv.config();
 await connectDB();
@@ -18,6 +19,7 @@ app.use(express.json());
 
 // 3. Application Routes
 app.use("/api/courses", coursesRouter);
+app.use("/api/users", userRouter);
 
 // 4. Global 404 Handler (بتشتغل لو اليوزر طلب Route مش موجود)
 app.use((req, res, next) => {

@@ -1,4 +1,3 @@
-import { courseSchema } from "../schema/course.schema.js";
 import Course from "../models/course.model.js";
 import httpStatusText from "../utils/httpStatusText.js";
 import AppError from "../utils/AppError.js";
@@ -12,7 +11,7 @@ export const getAllCourses = async (req, res) => {
     .skip(skip)
     .limit(parseInt(limit));
 
-  return res.json({ status: httpStatusText.SUCCESS, data: courses });
+  return res.json({ status: httpStatusText.SUCCESS, data: { courses } });
 };
 
 export const getCourseById = async (req, res) => {
@@ -24,38 +23,18 @@ export const getCourseById = async (req, res) => {
 };
 
 export const createCourse = async (req, res) => {
-  const validationResult = courseSchema.safeParse(req.body);
-
-  if (!validationResult.success) {
-    const errorMessages = validationResult.error.issues
-      .map((issue) => issue.message)
-      .join(" - ");
-    throw new AppError(errorMessages, 400, httpStatusText.FAIL);
-  }
-
-  const newCourse = new Course(validationResult.data);
+  const newCourse = new Course(req.body);
   await newCourse.save();
   return res
     .status(201)
-    .json({ status: httpStatusText.CREATED, data: newCourse });
+    .json({ status: httpStatusText.CREATED, data: { newCourse } });
 };
 
 export const updateCourse = async (req, res) => {
-  // 1. إنشاء Schema مخصصة للتعديل (كل الحقول اختيارية)
-  const updateSchema = courseSchema.partial();
-  const validationResult = updateSchema.safeParse(req.body);
-
-  if (!validationResult.success) {
-    const errorMessages = validationResult.error.issues
-      .map((issue) => issue.message)
-      .join(" - ");
-    throw new AppError(errorMessages, 400, httpStatusText.FAIL);
-  }
-
   const course = await Course.findByIdAndUpdate(
     req.params.id,
     {
-      $set: { ...validationResult.data },
+      $set: req.body,
     },
     { returnDocument: "after" }, // عشان يرجعلك الكورس بعد التعديل
   );
