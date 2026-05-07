@@ -7,24 +7,38 @@ import {
   deleteCourse,
 } from "../controllers/courses.controller.js";
 import { courseSchema } from "../validations/course.schema.js";
-import { validateRequest } from "../middlewares/validator.middleware.js"; // الـ Middleware الجديد
-import { protect } from "../middlewares/auth.middleware.js";
+import { validateRequest } from "../middlewares/validator.middleware.js";
+import isAuthentication from "../middlewares/authentication.middleware.js";
+import isAuthorization from "../middlewares/authorization.middleware.js";
+import { userRole } from "../utils/userRoles.js";
 
 const router = express.Router();
 
 router
-  .get("/", protect, getAllCourses)
-  .post("/", protect, validateRequest(courseSchema), createCourse);
+  .get("/", isAuthentication, getAllCourses)
+  .post(
+    "/",
+    isAuthentication,
+    isAuthorization(userRole.ADMIN),
+    validateRequest(courseSchema),
+    createCourse,
+  );
 
-router.get("/:id", protect, getCourseById);
+router.get("/:id", isAuthentication, getCourseById);
 
 router.patch(
   "/:id",
-  protect,
+  isAuthentication,
+  isAuthorization(userRole.ADMIN),
   validateRequest(courseSchema.partial()),
   updateCourse,
 );
 
-router.delete("/:id", protect, deleteCourse);
+router.delete(
+  "/:id",
+  isAuthentication,
+  isAuthorization(userRole.ADMIN),
+  deleteCourse,
+);
 
 export default router;

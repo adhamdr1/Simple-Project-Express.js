@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
-
+import path from "path";
 import httpStatusText from "./utils/httpStatusText.js";
 import coursesRouter from "./routes/course.route.js";
 import userRouter from "./routes/user.route.js";
@@ -20,6 +20,9 @@ app.use(express.json());
 // 3. Application Routes
 app.use("/api/courses", coursesRouter);
 app.use("/api/users", userRouter);
+
+// لو اليوزر طلب /uploads/legend.jpg، السيرفر هيدور في فولدر uploads الحقيقي ويبعت الصورة
+app.use("/uploads", express.static(path.resolve("uploads")));
 
 // 4. Global 404 Handler (بتشتغل لو اليوزر طلب Route مش موجود)
 app.use((req, res, next) => {

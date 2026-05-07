@@ -1,21 +1,37 @@
 import express from "express";
 import { validateRequest } from "../middlewares/validator.middleware.js"; // الـ Middleware الجديد
 import { registerSchema, loginSchema } from "../validations/user.schema.js";
-import { protect } from "../middlewares/auth.middleware.js";
+import isAuthentication from "../middlewares/authentication.middleware.js";
+import isAuthorization from "../middlewares/authorization.middleware.js";
+import { userRole } from "../utils/userRoles.js";
 import {
   getAllUsers,
   register,
   login,
+  updateAvatar,
   // getUserById,
   // updateUser,
   // deleteUser,
 } from "../controllers/users.controller.js";
+import upload from "../middlewares/upload.middleware.js";
 
 const router = express.Router();
 
-router.get("/", protect, getAllUsers);
+router.get("/", isAuthentication, isAuthorization(userRole.ADMIN), getAllUsers);
 
-router.post("/register", validateRequest(registerSchema), register);
+router.post(
+  "/register",
+  upload.single("avatar"),
+  validateRequest(registerSchema),
+  register,
+);
+
+router.patch(
+  "/upload-avatar",
+  isAuthentication, // لازم يكون عامل تسجيل دخول الأول
+  upload.single("avatar"), // 💡 Multer بيقف هنا يمسك الصورة يحفظها
+  updateAvatar, // الـ Controller اللي هيسيف اسم الصورة في الداتا بيز
+);
 
 router.post("/login", validateRequest(loginSchema), login);
 

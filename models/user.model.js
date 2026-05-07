@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import validator from "validator";
 import bcrypt from "bcryptjs";
+import { userRole } from "../utils/userRoles.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -41,6 +42,16 @@ const userSchema = new mongoose.Schema(
         },
         "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
       ],
+    },
+    role: {
+      type: String,
+      enum: [userRole.ADMIN, userRole.STUDENT, userRole.TEACHER],
+      default: userRole.STUDENT,
+      lowercase: true,
+    },
+    avatar: {
+      type: String,
+      default: "uploads/legend.jpg",
     },
   },
   {

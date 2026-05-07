@@ -22,7 +22,13 @@ export const register = async (req, res) => {
     throw new AppError("Email already exists", 400, httpStatusText.FAIL);
   }
 
-  const newUser = await User.create(req.body);
+  const userData = { ...req.body };
+
+  if (req.file) {
+    userData.avatar = `uploads/${req.file.filename}`;
+  }
+
+  const newUser = await User.create(userData);
 
   // 3. إصدار التوكن
   const token = generateToken(newUser._id);
@@ -62,6 +68,31 @@ export const login = async (req, res) => {
   });
 };
 
+export const updateAvatar = async (req, res) => {
+  // 1. التأكد إن اليوزر رفع ملف فعلاً
+  if (!req.file) {
+    throw new AppError("Please upload an image", 400, httpStatusText.FAIL);
+  }
+
+  // 2. req.file ده كائن (Object) مولده multer، جواه بيانات الملف، والـ filename هو الاسم الجديد اللي عملناه
+  const avatarPath = `uploads/${req.file.filename}`;
+
+  // 3. تحديث اليوزر في الداتا بيز بالمسار الجديد
+  // بنستخدم req.user._id لأننا ضامنين إن دالة protect جابته
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user._id,
+    { avatar: avatarPath },
+    { returnDocument: "after" }, // عشان يرجع اليوزر بعد التعديل
+  );
+
+  // 4. إخفاء الباسوورد قبل الرد
+  updatedUser.password = undefined;
+
+  return res.status(200).json({
+    status: httpStatusText.SUCCESS,
+    data: { user: updatedUser },
+  });
+};
 // export const getUserById = async (req, res) => {
 //   const user = await User.findById(req.params.id);
 //   if (!user) {

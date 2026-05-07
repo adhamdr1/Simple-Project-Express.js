@@ -1,11 +1,11 @@
-// middlewares/auth.middleware.js
+// middlewares/authentication.middleware.js
 import jwt from "jsonwebtoken";
 import AppError from "../utils/AppError.js";
 import httpStatusText from "../utils/httpStatusText.js";
 import User from "../models/user.model.js";
 
 // دالة الحماية (Guard)
-export const protect = async (req, res, next) => {
+export const isAuthentication = async (req, res, next) => {
   // 1. جلب التوكن من الـ Headers والتأكد من وجود كلمة Bearer
   let token;
   if (
@@ -54,3 +54,5 @@ export const protect = async (req, res, next) => {
     );
   }
 };
+
+export default isAuthentication;

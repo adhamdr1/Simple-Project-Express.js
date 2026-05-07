@@ -6,6 +6,11 @@ export const registerSchema = z.object({
   lastName: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8),
+  role: z
+    .string() // 1. استلم النص
+    .toLowerCase() // 2. حول أي حرف كابيتال لسمول أوتوماتيك (AdMin -> admin)
+    .pipe(z.enum(["admin", "student", "teacher"])) // 3. دخله على الـ enum يتأكد منه
+    .optional(),
 });
 
 // Schema خاص بالدخول (مش محتاجين الاسم هنا)
